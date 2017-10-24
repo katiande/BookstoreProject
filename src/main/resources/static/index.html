@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Bookstore</title>
+</head>
+
+<body>
+  <div class='container'>
+    <div id='root'></div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+
+<script type="text/babel">
+class App extends React.Component {
+		  constructor(props) {
+		      super(props);
+			
+			this.deleteBook = this.deleteBook.bind(this);
+			this.createBook = this.createBook.bind(this);
+
+		      this.state = {
+		          books: [],
+		      };
+		   }
+		 
+		  componentDidMount() {
+			this.loadBooksFromServer();
+		  }
+		  
+		  // Load students from database
+		  loadBooksFromServer() {
+			  	fetch('http://localhost:8080/api/books', {
+				credentials: 'same-origin'}).then((response) => response.json()).then((responseData) => {
+				console.log(responseData);
+				this.setState({books: responseData._embedded.books});
+		      });     
+		  } 
+
+		deleteBook(book) {
+			fetch(book._links.self.href, {credentials: 'same-origin', method: 'DELETE'})
+				.then(res => this.loadBooksFromServer())
+				.catch(err => console.error(err))
+		}
+
+ 		createBook(book) {
+			console.log("Save: " + book.isbn);
+      		fetch('http://localhost:8080/api/books', {
+          		method: 'POST',
+          		headers: {
+            	'Content-Type': 'application/json',
+         		},
+				credentials: 'same-origin',
+          		body: JSON.stringify(book)
+      			})
+      			.then( 
+         		res => this.loadBooksFromServer()
+      		)
+      			.catch( err => cosole.error(err))
+		}
+
+		  
+		  render() {
+		    return (
+			<div>
+				<BookForm 
+					createBook={this.createBook}/>
+		       <BookTable
+					deleteBook={this.deleteBook}
+					books={this.state.books}/>
+			</div>
+		    );
+		  }
+		}
+		    	
+	class BookTable extends React.Component {
+		constructor(props) {
+			super(props);
+		}
+		    
+		render() {
+			var books = this.props.books.map(book => <Book
+				key={book._links.self.href}
+				deleteBook={this.props.deleteBook}
+				book={book}/>);
+
+			return (
+				<div>
+					<table className="table table-striped">
+						<thead>
+							<tr>
+								<th>Author</th>
+								<th>Title</th>
+								<th>ISBN</th>
+								<th>Year</th>
+								<th>Price</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>{books}</tbody>
+					</table>
+				</div>
+			);
+		}
+}
+
+class Book extends React.Component {
+		constructor(props) {
+			super(props);
+			this.deleteBook = this.deleteBook.bind(this);
+		}
+
+		deleteBook() {
+			this.props.deleteBook(this.props.book);
+		}
+
+		render() {
+			return (
+				<tr>
+					<td>{this.props.book.author}</td>
+					<td>{this.props.book.title}</td>
+					<td>{this.props.book.isbn}</td>
+					<td>{this.props.book.year}</td>
+					<td>{this.props.book.price}</td>
+					<td>
+						<button className="btn btn-danger btn-xs" onClick={this.deleteBook}>Delete</button>
+					</td>
+				</tr>
+			);
+		}
+}
+
+class BookForm extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {author: '', title: '', isbn: '', year: '', price: ''};
+        this.handleSubmit = this.handleSubmit.bind(this);   
+        this.handleChange = this.handleChange.bind(this);     
+    }
+
+    handleChange(event) {
+        this.setState(
+            {[event.target.name]: event.target.value}
+        );
+    }    
+    
+    handleSubmit(event) {
+        event.preventDefault();
+        var newBook = {author: this.state.author, title: this.state.title, isbn: this.state.isbn, year: this.state.year, price: this.state.price};
+        this.props.createBook(newBook); 
+       
+		this.setState({author: '', title: '', isbn: '', year: '', price: ''}); // empty form after saving
+    }
+    
+    render() {
+        return (
+            <div className="panel panel-default">
+                <div className="panel-heading">Create book</div>
+                <div className="panel-body">
+                <form className="form-inline">
+                    <div className="col-md-2">
+                        <input type="text" placeholder="Author" value={this.state.author} className="form-control"  name="author" onChange={this.handleChange}/>    
+                    </div>
+                    <div className="col-md-2">       
+                        <input type="text" placeholder="Title" value={this.state.title} className="form-control" name="title" onChange={this.handleChange}/>
+                    </div>
+                    <div className="col-md-2">
+                        <input type="text" placeholder="Isbn"  value={this.state.isbn} className="form-control" name="isbn" onChange={this.handleChange}/>
+                    </div>
+ 					<div className="col-md-2">
+                        <input type="text" placeholder="Year"  value={this.state.year} className="form-control" name="year" onChange={this.handleChange}/>
+                    </div>
+ 					<div className="col-md-2">
+                        <input type="text" placeholder="Price"  value={this.state.price} className="form-control" name="price" onChange={this.handleChange}/>
+                    </div>
+                    <div className="col-md-2">
+                        <button className="btn btn-success" onClick={this.handleSubmit}>Save</button>   
+                    </div>        
+                </form>
+                </div>      
+            </div>         
+        );
+    }
+}
+
+	ReactDOM.render(<App />, document.getElementById('root') );	
+	</script>
+
+</body>
+</html>
