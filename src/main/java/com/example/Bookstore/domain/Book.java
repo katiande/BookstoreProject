@@ -5,7 +5,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class Book {
@@ -17,7 +16,6 @@ public class Book {
 	private long year;
 	private double price;
 	
-	@JsonIgnore
 	
 	public Book(){
 		
